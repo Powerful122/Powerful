@@ -3,265 +3,542 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeFi Content Approval Tool</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: auto; padding: 20px; background: #fdf9f3; color: #00346e; }
-        h1 { color: #00346e; }
-        button { background: #006fc6; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; }
-        button:hover { background: #00418b; }
-        .content-item { border: 1px solid #ddd; padding: 10px; margin: 10px 0; background: white; border-radius: 8px; }
-        .preview { cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .approval { display: inline-block; margin-right: 10px; }
-        .approval input[type="radio"] { display: none; }
-        .approval label { padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .approval #approve + label { background: #4caf50; color: white; } /* Green */
-        .approval #disapprove + label { background: #f44336; color: white; } /* Red */
-        .approval input:checked + label { border: 2px solid #333; }
-        .comments { width: 100%; height: 50px; }
-        .mockup { margin-top: 10px; }
-        .mockup img { max-width: 100%; }
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000; }
-        .overlay-content { background: white; padding: 20px; border-radius: 8px; max-width: 600px; overflow-y: auto; }
-        .close { float: right; cursor: pointer; font-size: 20px; }
-        .logo { width: 50px; vertical-align: middle; }
-        .admin-only { display: none; } /* Hidden unless admin */
-        #loading { text-align: center; }
-    </style>
-</head>
-<body>
-    <img src="brand-logo.png" alt="Brand Logo" class="logo">
-    <h1>DeFi Content Approval</h1>
-    <p>Welcome to the DeFi Content Approval Tool – Streamlining your social media workflow with professional branding.</p>
-    <button onclick="openCategoriesOverlay()">See Our Content Categories</button>
-    <form id="add-form" class="admin-only">
-        <textarea id="new-copy" placeholder="Write content copy here..." rows="4" style="width:100%;"></textarea>
-        <input type="file" id="new-mockup-file" accept="image/*">
-        <button type="submit">Add Content</button>
-    </form>
-    <div id="content-list"></div>
-    <div id="loading">Loading...</div>
-
-    <div id="post-overlay" class="overlay">
-        <div class="overlay-content">
-            <span class="close" onclick="closeOverlay()">&times;</span>
-            <textarea id="full-copy" class="admin-only" style="width:100%;"></textarea>
-            <p id="full-copy-view" style="display:none;"></p> <!-- For non-admin view -->
-            <div class="approval">
-                <input type="radio" id="approve" name="approval"><label for="approve">Approve</label>
-                <input type="radio" id="disapprove" name="approval"><label for="disapprove">Disapprove</label>
-            </div>
-            <textarea class="comments" placeholder="Add comments..."></textarea>
-            <div class="mockup">
-                <img id="mockup-img" src="">
-                <input type="file" id="mockup-file" accept="image/*">
-                <button onclick="uploadMockup()">Upload Mockup</button>
-            </div>
-            <button class="admin-only" onclick="saveEdit()">Save Edit</button>
-        </div>
-    </div>
-
-    <div id="categories-overlay" class="overlay">
-        <div class="overlay-content">
-            <span class="close" onclick="closeCategoriesOverlay()">&times;</span>
-            <h2>Our Content Categories</h2>
-            <p><strong>Marketing & Outreach Content</strong><br>This content is designed to attract, engage, and convert a broad audience.</p>
-            <ul>
-                <li><strong>Blog Posts / Articles:</strong>
-                    <ul>
-                        <li>Educational: "DeFi 101," "What is RWA Tokenization," or "How Lending Protocols Use Oracles."</li>
-                        <li>SEO-Focused: Targeting high-volume search terms like "best DeFi yield" or "tokenized real estate platforms."</li>
-                        <li>Thought Leadership: Commentary on market trends, regulatory changes, or the future of decentralized finance.</li>
-                    </ul>
-                </li>
-                <li><strong>Social Media Posts (Tweets/X Posts, LinkedIn, Telegram):</strong>
-                    <ul>
-                        <li>Threads: Long-form, sequential posts breaking down complex protocol updates, tokenomics, or market analysis.</li>
-                        <li>Daily Engagement: Short, punchy posts, questions, and replies to drive community interaction.</li>
-                        <li>Visual Copy: Captions and headlines for infographics and short-form videos.</li>
-                    </ul>
-                </li>
-                <li><strong>Website Copy / Landing Page Copy:</strong>
-                    <ul>
-                        <li>High-Conversion Text: Crafting the headlines, calls-to-action (CTAs), and benefits-focused paragraphs on your website (which you just built!).</li>
-                        <li>About Us/Mission: Establishing brand authority and credibility.</li>
-                    </ul>
-                </li>
-                <li><strong>Email Marketing:</strong>
-                    <ul>
-                        <li>Newsletters: Regular updates on protocol development, new features, and community announcements.</li>
-                        <li>Lead Nurturing: Automated email sequences aimed at converting interested parties (e.g., "7 Days to Understanding Our DEX").</li>
-                    </ul>
-                </li>
-            </ul>
-            <p>📚 <strong>Technical & Educational Content</strong><br>This content requires deep subject-matter expertise and is crucial for building trust in the complex DeFi space.</p>
-            <ul>
-                <li>White Papers: Comprehensive, authoritative documents detailing the problem, solution, technology, and tokenomics of a protocol. (This is essential for serious protocols).</li>
-                <li>Lite Papers/Pitch Decks: Shorter, less technical versions of the White Paper, focused on executive summaries and investment narratives.</li>
-                <li>Documentation (Docs): Step-by-step guides, API references, and FAQs for developers, liquidity providers, and end-users on how to use the protocol.</li>
-                <li>Protocol Mechanism Explanations: Clear articles or threads that explain complex features like collateralization ratios, governance models, or impermanent loss in plain language.</li>
-                <li>Case Studies: Detailed reports showcasing a client's success, including the challenge, the strategy, and measurable results (like TVL growth or community expansion).</li>
-            </ul>
-            <p>📢 <strong>Promotional & Public Relations Content</strong><br>This content focuses on getting the brand noticed and positioning leaders as experts.</p>
-            <ul>
-                <li>Press Releases: Formal announcements for major milestones (e.g., launching a new token, closing a funding round, or listing on an exchange).</li>
-                <li>Q&A/AMA Scripts: Preparing founders or developers with clear, concise answers for live streams or Ask-Me-Anything sessions.</li>
-                <li>Interview Scripts/Talking Points: Drafting key messaging for media interviews, podcasts, or conference appearances.</li>
-                <li>Video Scripts: Writing scripts for explainer videos, animated tutorials, and founder addresses.</li>
-            </ul>
-        </div>
-    </div>
+    <title>Content Approval Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Firebase SDKs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.3.0/firebase-app.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.3.0/firebase-firestore.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.3.0/firebase-storage.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <script>
-        // Paste your Firebase config here
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+        // --- Configuration ---
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // --- Global State ---
+        let currentUser = null;
+        let isWriterMode = false; // Toggles admin features
+
+        // --- DOM Elements ---
+        const postsContainer = document.getElementById('posts-container');
+        const fabBtn = document.getElementById('fab-add');
+        const authToggleBtn = document.getElementById('auth-toggle');
+        const loadingIndicator = document.getElementById('loading');
+        
+        // Modals
+        const categoryModal = document.getElementById('category-modal');
+        const postModal = document.getElementById('post-modal');
+        const contentModal = document.getElementById('content-modal');
+
+        // --- Authentication ---
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
         };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const storage = firebase.storage();
-        const collection = db.collection('contents');
 
-        const isAdmin = new URLSearchParams(window.location.search).get('admin') === 'true';
-        if (isAdmin) {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-        }
+        initAuth();
 
-        const list = document.getElementById('content-list');
-        const loading = document.getElementById('loading');
-        const postOverlay = document.getElementById('post-overlay');
-        const fullCopy = document.getElementById('full-copy');
-        const fullCopyView = document.getElementById('full-copy-view');
-        const approve = document.getElementById('approve');
-        const disapprove = document.getElementById('disapprove');
-        const comments = document.querySelector('.comments');
-        const mockupImg = document.getElementById('mockup-img');
-        const mockupFile = document.getElementById('mockup-file');
-        let currentDoc = null;
-
-        // Real-time listener
-        collection.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-            list.innerHTML = '';
-            snapshot.forEach(doc => {
-                const item = doc.data();
-                const div = document.createElement('div');
-                div.className = 'content-item';
-                div.innerHTML = `
-                    <div class="preview" onclick="openOverlay('${doc.id}')">${item.copy.substring(0, 100)}...</div>
-                    ${isAdmin ? `<button onclick="deleteItem('${doc.id}')">Delete</button>` : ''}
-                `;
-                list.appendChild(div);
-            });
-            loading.style.display = 'none';
-        }, err => console.error(err));
-
-        function openOverlay(id) {
-            currentDoc = collection.doc(id);
-            currentDoc.get().then(doc => {
-                const item = doc.data();
-                if (isAdmin) {
-                    fullCopy.value = item.copy;
-                    fullCopy.style.display = 'block';
-                    fullCopyView.style.display = 'none';
-                } else {
-                    fullCopyView.textContent = item.copy;
-                    fullCopyView.style.display = 'block';
-                    fullCopy.style.display = 'none';
-                }
-                approve.checked = item.approved === 'approve';
-                disapprove.checked = item.approved === 'disapprove';
-                comments.value = item.comments || '';
-                mockupImg.src = item.mockupUrl || '';
-                postOverlay.style.display = 'flex';
-            });
-        }
-
-        function closeOverlay() {
-            postOverlay.style.display = 'none';
-            currentDoc = null;
-        }
-
-        postOverlay.addEventListener('click', (e) => {
-            if (e.target === postOverlay) closeOverlay();
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                setupRealtimeListener(user);
+            }
         });
 
-        approve.addEventListener('change', saveChanges);
-        disapprove.addEventListener('change', saveChanges);
-        comments.addEventListener('input', saveChanges);
+        // --- Firestore Logic ---
+        function setupRealtimeListener(user) {
+            // Using a public collection so clients can access without complex auth
+            // In a production app, we would use specific rules, but for this tool:
+            // /artifacts/{appId}/public/data/content_posts
+            const q = collection(db, 'artifacts', appId, 'public', 'data', 'content_posts');
 
-        function saveChanges() {
-            if (!currentDoc) return;
-            const updates = {
-                approved: approve.checked ? 'approve' : (disapprove.checked ? 'disapprove' : ''),
-                comments: comments.value
-            };
-            if (isAdmin) {
-                updates.copy = fullCopy.value;
-            }
-            currentDoc.update(updates).catch(err => console.error(err));
-        }
-
-        function saveEdit() {
-            saveChanges();
-        }
-
-        function deleteItem(id) {
-            if (confirm('Delete this item?')) {
-                collection.doc(id).delete();
-            }
-        }
-
-        function uploadMockup() {
-            const file = mockupFile.files[0];
-            if (!file || !currentDoc) return;
-            const ref = storage.ref(`mockups/${currentDoc.id}`);
-            ref.put(file).then(() => {
-                ref.getDownloadURL().then(url => {
-                    currentDoc.update({ mockupUrl: url });
-                    mockupImg.src = url;
+            onSnapshot(q, (snapshot) => {
+                loadingIndicator.classList.add('hidden');
+                postsContainer.innerHTML = '';
+                
+                const posts = [];
+                snapshot.forEach((doc) => {
+                    posts.push({ id: doc.id, ...doc.data() });
                 });
-            }).catch(err => console.error(err));
-        }
 
-        document.getElementById('add-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const copy = document.getElementById('new-copy').value;
-            if (!copy) return;
-            collection.add({
-                copy,
-                approved: '',
-                comments: '',
-                mockupUrl: '',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(docRef => {
-                const file = document.getElementById('new-mockup-file').files[0];
-                if (file) {
-                    const ref = storage.ref(`mockups/${docRef.id}`);
-                    ref.put(file).then(() => {
-                        ref.getDownloadURL().then(url => docRef.update({ mockupUrl: url }));
-                    });
+                // Sort purely client-side to avoid index errors
+                // Sort by timestamp desc (newest first)
+                posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+                if (posts.length === 0) {
+                    postsContainer.innerHTML = `
+                        <div class="col-span-full text-center py-20 opacity-50">
+                            <i class="fa-regular fa-folder-open text-4xl mb-4"></i>
+                            <p>No content posted yet.</p>
+                        </div>
+                    `;
                 }
-                document.getElementById('new-copy').value = '';
-                document.getElementById('new-mockup-file').value = '';
+
+                posts.forEach(post => {
+                    renderPostCard(post);
+                });
+            }, (error) => {
+                console.error("Error fetching posts:", error);
+                loadingIndicator.innerText = "Error loading content. Please refresh.";
             });
-        });
-
-        function openCategoriesOverlay() {
-            document.getElementById('categories-overlay').style.display = 'flex';
         }
 
-        function closeCategoriesOverlay() {
-            document.getElementById('categories-overlay').style.display = 'none';
+        // --- Rendering ---
+        function renderPostCard(post) {
+            const card = document.createElement('div');
+            card.className = "bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all hover:shadow-md flex flex-col";
+            
+            // Status Logic
+            let statusColor = "bg-gray-100 text-gray-600";
+            let statusText = "Pending Review";
+            let borderColor = "border-transparent";
+
+            if (post.status === 'approved') {
+                statusColor = "bg-green-100 text-green-700";
+                statusText = "Approved";
+                borderColor = "border-green-500";
+            } else if (post.status === 'rejected') {
+                statusColor = "bg-red-100 text-red-700";
+                statusText = "Changes Requested";
+                borderColor = "border-red-500";
+            }
+
+            // Graphic/Mockup Section
+            let graphicHtml = '';
+            if (post.graphicUrl) {
+                graphicHtml = `
+                    <div class="w-full h-48 bg-gray-50 border-b border-gray-100 flex items-center justify-center overflow-hidden group cursor-pointer relative" onclick="window.open('${post.graphicUrl}', '_blank')">
+                        <img src="${post.graphicUrl}" alt="Mockup" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://placehold.co/600x400?text=Graphic+Link+Broken'">
+                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all flex items-center justify-center">
+                            <span class="opacity-0 group-hover:opacity-100 bg-white px-3 py-1 rounded-full text-xs font-bold shadow">View Original</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                 graphicHtml = `
+                    <div class="w-full h-12 bg-gray-50 border-b border-gray-100 flex items-center justify-center text-xs text-gray-400">
+                        No Graphic Attached
+                    </div>
+                `;
+            }
+
+            // Client Controls HTML
+            const clientControls = `
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <label class="block text-xs font-semibold text-[#00346e] uppercase tracking-wider mb-2">Client Approval</label>
+                    <div class="flex gap-3 mb-3">
+                        <button onclick="updatePostStatus('${post.id}', 'approved')" class="flex-1 py-2 rounded-lg border ${post.status === 'approved' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-600'} transition-colors flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-check"></i> Approve
+                        </button>
+                        <button onclick="updatePostStatus('${post.id}', 'rejected')" class="flex-1 py-2 rounded-lg border ${post.status === 'rejected' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-600 border-gray-200 hover:border-red-400 hover:text-red-600'} transition-colors flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-xmark"></i> Changes
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <textarea 
+                            id="comment-${post.id}"
+                            placeholder="Add your comments or feedback here..." 
+                            class="w-full text-sm p-3 bg-[#fdf9f3] rounded-lg border border-gray-200 focus:border-[#00418b] focus:ring-1 focus:ring-[#00418b] outline-none resize-none h-20 transition-all"
+                            onchange="saveComment('${post.id}', this.value)"
+                        >${post.clientComment || ''}</textarea>
+                        <div class="absolute bottom-2 right-2 text-[10px] text-gray-400 italic">Auto-saves</div>
+                    </div>
+                </div>
+            `;
+
+            // Admin Controls
+            const adminControls = isWriterMode ? `
+                <div class="absolute top-2 right-2 flex gap-1">
+                    <button onclick="openEditModal('${post.id}', '${encodeURIComponent(JSON.stringify(post))}')" class="w-8 h-8 rounded-full bg-white shadow text-gray-600 hover:text-[#00418b] flex items-center justify-center">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button onclick="deletePost('${post.id}')" class="w-8 h-8 rounded-full bg-white shadow text-gray-600 hover:text-red-600 flex items-center justify-center">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            ` : '';
+
+            card.innerHTML = `
+                <div class="relative ${post.status === 'rejected' ? 'border-l-4 border-l-red-500' : (post.status === 'approved' ? 'border-l-4 border-l-green-500' : '')}">
+                    ${graphicHtml}
+                    ${adminControls}
+                    
+                    <div class="p-5 flex-1 flex flex-col">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold text-[#00346e] text-lg leading-tight mb-1">${post.title || 'Untitled Post'}</h3>
+                                <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${statusColor}">
+                                    ${statusText}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 group cursor-pointer" onclick="openContentOverlay('${encodeURIComponent(post.content)}', '${encodeURIComponent(post.title)}')">
+                            <div class="text-sm text-gray-600 line-clamp-3 bg-white p-3 rounded border border-dashed border-gray-300 group-hover:border-[#00418b] group-hover:bg-[#fdf9f3] transition-colors relative">
+                                ${post.content || 'No content text...'}
+                                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 font-medium text-[#00418b]">
+                                    <i class="fa-regular fa-copy mr-2"></i> Click to View & Copy
+                                </div>
+                            </div>
+                        </div>
+
+                        ${clientControls}
+                    </div>
+                </div>
+            `;
+
+            postsContainer.appendChild(card);
         }
+
+        // --- Actions ---
+
+        window.updatePostStatus = async (postId, newStatus) => {
+            try {
+                const ref = doc(db, 'artifacts', appId, 'public', 'data', 'content_posts', postId);
+                await updateDoc(ref, { status: newStatus });
+            } catch (e) {
+                console.error("Error updating status", e);
+                showToast("Error updating status", "error");
+            }
+        };
+
+        window.saveComment = async (postId, comment) => {
+            try {
+                const ref = doc(db, 'artifacts', appId, 'public', 'data', 'content_posts', postId);
+                await updateDoc(ref, { clientComment: comment });
+                showToast("Comment saved", "success");
+            } catch (e) {
+                console.error("Error saving comment", e);
+            }
+        };
+
+        window.deletePost = async (postId) => {
+            if(!confirm("Are you sure you want to delete this post?")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'content_posts', postId));
+                showToast("Post deleted", "success");
+            } catch (e) {
+                console.error(e);
+                showToast("Error deleting", "error");
+            }
+        };
+
+        window.handlePostSubmit = async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('post-title').value;
+            const content = document.getElementById('post-content').value;
+            const graphicUrl = document.getElementById('post-graphic').value;
+            const editId = document.getElementById('post-edit-id').value;
+
+            const data = {
+                title,
+                content,
+                graphicUrl,
+                updatedAt: Date.now()
+            };
+
+            try {
+                if (editId) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'content_posts', editId), data);
+                    showToast("Post updated successfully", "success");
+                } else {
+                    data.createdAt = Date.now();
+                    data.status = 'pending';
+                    data.clientComment = '';
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'content_posts'), data);
+                    showToast("New post created", "success");
+                }
+                closeModal('post-modal');
+                e.target.reset();
+            } catch (err) {
+                console.error(err);
+                showToast("Error saving post", "error");
+            }
+        };
+
+        // --- Modal & UI Logic ---
+
+        window.openEditModal = (id, encodedPost) => {
+            const post = JSON.parse(decodeURIComponent(encodedPost));
+            document.getElementById('post-title').value = post.title;
+            document.getElementById('post-content').value = post.content;
+            document.getElementById('post-graphic').value = post.graphicUrl || '';
+            document.getElementById('post-edit-id').value = id;
+            document.getElementById('modal-title').innerText = "Edit Content";
+            postModal.showModal();
+        };
+
+        window.openAddModal = () => {
+            document.getElementById('post-form').reset();
+            document.getElementById('post-edit-id').value = '';
+            document.getElementById('modal-title').innerText = "New Content";
+            postModal.showModal();
+        };
+
+        window.openContentOverlay = (encodedContent, encodedTitle) => {
+            const content = decodeURIComponent(encodedContent);
+            const title = decodeURIComponent(encodedTitle);
+            
+            document.getElementById('overlay-title').innerText = title;
+            document.getElementById('overlay-content').innerText = content;
+            contentModal.showModal();
+        };
+
+        window.copyContent = () => {
+            const text = document.getElementById('overlay-content').innerText;
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            const btn = document.getElementById('copy-btn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-check"></i> Copied!`;
+            btn.classList.add('bg-green-600', 'border-green-600', 'text-white');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('bg-green-600', 'border-green-600', 'text-white');
+            }, 2000);
+        };
+
+        window.closeModal = (modalId) => {
+            document.getElementById(modalId).close();
+        };
+
+        window.toggleCategories = () => {
+            categoryModal.showModal();
+        };
+
+        window.toggleWriterMode = () => {
+            if (isWriterMode) {
+                isWriterMode = false;
+                fabBtn.classList.add('hidden');
+                document.body.classList.remove('writer-mode');
+                showToast("Switched to Client View", "neutral");
+                authToggleBtn.innerHTML = '<i class="fa-solid fa-lock"></i>';
+            } else {
+                const pass = prompt("Enter Writer Access Code (Try: 'writer')");
+                if (pass === 'writer') {
+                    isWriterMode = true;
+                    fabBtn.classList.remove('hidden');
+                    document.body.classList.add('writer-mode');
+                    showToast("Writer Mode Active", "success");
+                    authToggleBtn.innerHTML = '<i class="fa-solid fa-lock-open text-green-400"></i>';
+                } else if (pass !== null) {
+                    alert("Incorrect code");
+                }
+            }
+            // Trigger re-render to show/hide buttons
+            if (currentUser) setupRealtimeListener(currentUser);
+        };
+
+        // --- Toast Notification ---
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-5 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-white text-sm font-medium shadow-lg transition-all duration-300 translate-y-10 opacity-0 z-50 flex items-center gap-2`;
+            
+            if (type === 'success') toast.classList.add('bg-[#00418b]');
+            else if (type === 'error') toast.classList.add('bg-red-600');
+            else toast.classList.add('bg-gray-800');
+
+            toast.innerHTML = `<span>${message}</span>`;
+            document.body.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
     </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #fdf9f3; }
+        
+        /* Custom scrollbar for textareas */
+        textarea::-webkit-scrollbar { width: 6px; }
+        textarea::-webkit-scrollbar-track { background: transparent; }
+        textarea::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        
+        dialog::backdrop {
+            background: rgba(0, 52, 110, 0.4);
+            backdrop-filter: blur(2px);
+        }
+        dialog[open] {
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-[#00346e] text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <!-- Branding Placeholder -->
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-[#00346e] font-bold text-2xl shadow-inner">
+                    <i class="fa-solid fa-feather-pointed"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl tracking-wide">BrandContent<span class="font-light text-blue-200">Portal</span></h1>
+                    <p class="text-xs text-blue-200">Review, Approve & Comment</p>
+                </div>
+            </div>
+
+            <button onclick="toggleCategories()" class="bg-[#00418b] hover:bg-[#006fc6] text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-lg transition-transform hover:scale-105 border border-blue-400/30 flex items-center gap-2">
+                <i class="fa-solid fa-layer-group"></i> See Our Content Categories
+            </button>
+        </div>
+    </header>
+
+    <!-- Intro Section -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-6xl mx-auto px-4 py-8 text-center">
+            <h2 class="text-2xl font-bold text-[#00346e] mb-2">Welcome to the Approval Dashboard</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">
+                Here you can review the latest content drafts. Use the approval controls to sign off on posts or leave feedback for revisions. 
+                Click on the text content to copy it directly.
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 md:p-8">
+        <div class="max-w-6xl mx-auto">
+            
+            <!-- Loading State -->
+            <div id="loading" class="text-center py-20 text-[#00418b]">
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl mb-4"></i>
+                <p>Loading posts...</p>
+            </div>
+
+            <!-- Posts Grid -->
+            <div id="posts-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamic Content Here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#00346e] text-blue-200 py-6 mt-12">
+        <div class="max-w-6xl mx-auto px-4 flex justify-between items-center text-xs">
+            <p>&copy; 2023 Content Portal. All rights reserved.</p>
+            <button id="auth-toggle" onclick="toggleWriterMode()" class="p-2 hover:text-white transition-colors opacity-50 hover:opacity-100" title="Writer Login">
+                <i class="fa-solid fa-lock"></i>
+            </button>
+        </div>
+    </footer>
+
+    <!-- FAB (Writer Only) -->
+    <button id="fab-add" onclick="openAddModal()" class="hidden fixed bottom-8 right-8 w-14 h-14 bg-[#006fc6] hover:bg-[#00418b] text-white rounded-full shadow-xl flex items-center justify-center text-2xl transition-transform hover:scale-110 z-30">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <!-- Category Modal -->
+    <dialog id="category-modal" class="rounded-2xl shadow-2xl p-0 w-full max-w-2xl bg-white overflow-hidden">
+        <div class="bg-[#00346e] p-6 text-white flex justify-between items-center">
+            <h3 class="text-xl font-bold"><i class="fa-solid fa-tags mr-2"></i> Content Categories</h3>
+            <button onclick="closeModal('category-modal')" class="text-white hover:text-red-300 transition-colors">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-8 overflow-y-auto max-h-[70vh] space-y-6 text-gray-700 leading-relaxed">
+            <div class="bg-[#fdf9f3] p-6 rounded-xl border-l-4 border-[#006fc6]">
+                <h4 class="font-bold text-[#00346e] text-lg mb-2">Marketing & Outreach Content</h4>
+                <p class="mb-4">This content is designed to attract, engage, and convert a broad audience.</p>
+                
+                <h5 class="font-semibold text-[#00418b] mt-4 mb-2"><i class="fa-solid fa-blog mr-1"></i> Blog Posts / Articles:</h5>
+                <ul class="list-disc pl-5 space-y-1 text-sm">
+                    <li><strong class="text-gray-900">Educational:</strong> "DeFi 101," "What is RWA Tokenization," or "How Lending Protocols Use Oracles."</li>
+                    <li><strong class="text-gray-900">SEO-Focused:</strong> Targeting high-volume search terms like "best DeFi yield" or "tokenized real estate platforms."</li>
+                    <li><strong class="text-gray-900">Thought Leadership:</strong> Commentary on market trends, regulatory changes, or the future of decentralized finance.</li>
+                </ul>
+
+                <h5 class="font-semibold text-[#00418b] mt-4 mb-2"><i class="fa-brands fa-twitter mr-1"></i> Social Media Posts (Tweets/X Posts, LinkedIn, Telegram):</h5>
+                <ul class="list-disc pl-5 space-y-1 text-sm">
+                    <li><strong class="text-gray-900">Threads:</strong> Long-form, sequential posts breaking down complex protocol updates, tokenomics, or market analysis.</li>
+                    <li><strong class="text-gray-900">Daily Engagement:</strong> Short, punchy posts, questions, and replies to drive community interaction.</li>
+                    <li><strong class="text-gray-900">Visual Copy:</strong> Captions and headlines for infographics and short-form videos.</li>
+                </ul>
+
+                <h5 class="font-semibold text-[#00418b] mt-4 mb-2"><i class="fa-solid fa-globe mr-1"></i> Website Copy / Landing Page Copy:</h5>
+                <p class="text-sm italic text-gray-500">Targeted copy to improve conversion rates and explain value propositions clearly.</p>
+            </div>
+        </div>
+        <div class="bg-gray-50 p-4 border-t border-gray-100 text-right">
+            <button onclick="closeModal('category-modal')" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium transition-colors">Close</button>
+        </div>
+    </dialog>
+
+    <!-- Post Edit/Create Modal -->
+    <dialog id="post-modal" class="rounded-xl shadow-2xl p-0 w-full max-w-lg bg-white">
+        <form onsubmit="handlePostSubmit(event)">
+            <div class="p-6">
+                <h3 id="modal-title" class="text-xl font-bold text-[#00346e] mb-4">New Content</h3>
+                <input type="hidden" id="post-edit-id">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Post Title</label>
+                        <input type="text" id="post-title" required class="w-full p-2 border border-gray-300 rounded focus:ring-[#00418b] focus:border-[#00418b]">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Content Body</label>
+                        <textarea id="post-content" required rows="6" class="w-full p-2 border border-gray-300 rounded focus:ring-[#00418b] focus:border-[#00418b]"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Graphic URL (Optional)</label>
+                        <input type="url" id="post-graphic" placeholder="https://..." class="w-full p-2 border border-gray-300 rounded focus:ring-[#00418b] focus:border-[#00418b]">
+                        <p class="text-xs text-gray-500 mt-1">Paste a direct link to an image (png/jpg).</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 p-4 flex justify-end gap-3 rounded-b-xl">
+                <button type="button" onclick="closeModal('post-modal')" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                <button type="submit" class="px-6 py-2 bg-[#00418b] hover:bg-[#00346e] text-white rounded shadow transition-colors">Save Content</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Content View/Copy Modal -->
+    <dialog id="content-modal" class="rounded-xl shadow-2xl p-0 w-full max-w-3xl bg-white">
+        <div class="bg-gray-50 border-b border-gray-200 p-4 flex justify-between items-center sticky top-0">
+            <h3 id="overlay-title" class="text-lg font-bold text-[#00346e] truncate pr-4">Content View</h3>
+            <button onclick="closeModal('content-modal')" class="text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-8 bg-white min-h-[300px]">
+            <div id="overlay-content" class="text-gray-800 text-lg leading-relaxed whitespace-pre-wrap font-serif"></div>
+        </div>
+        <div class="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">
+            <button id="copy-btn" onclick="copyContent()" class="px-6 py-2 border border-[#00418b] text-[#00418b] hover:bg-[#00418b] hover:text-white rounded-lg font-medium transition-all flex items-center gap-2">
+                <i class="fa-regular fa-copy"></i> Copy to Clipboard
+            </button>
+        </div>
+    </dialog>
+
 </body>
 </html>
