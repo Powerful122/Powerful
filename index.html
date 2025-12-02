@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Content Approval Portal</title>
+    <title>POWERFUL | Content Approval</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
@@ -15,7 +15,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Configuration ---
         const firebaseConfig = JSON.parse(__firebase_config);
@@ -26,18 +26,21 @@
 
         // --- Global State ---
         let currentUser = null;
-        let isWriterMode = false; // Toggles admin features
+        let isWriterMode = false;
 
         // --- DOM Elements ---
         const postsContainer = document.getElementById('posts-container');
         const fabBtn = document.getElementById('fab-add');
         const authToggleBtn = document.getElementById('auth-toggle');
+        const changePassBtn = document.getElementById('change-pass-btn');
         const loadingIndicator = document.getElementById('loading');
         
         // Modals
         const categoryModal = document.getElementById('category-modal');
         const postModal = document.getElementById('post-modal');
         const contentModal = document.getElementById('content-modal');
+        const loginModal = document.getElementById('login-modal');
+        const passwordModal = document.getElementById('password-modal');
 
         // --- Authentication ---
         const initAuth = async () => {
@@ -54,14 +57,22 @@
             currentUser = user;
             if (user) {
                 setupRealtimeListener(user);
+                initializeSettings();
             }
         });
 
         // --- Firestore Logic ---
+
+        // Ensure settings doc exists
+        async function initializeSettings() {
+            const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_settings');
+            const docSnap = await getDoc(settingsRef);
+            if (!docSnap.exists()) {
+                await setDoc(settingsRef, { accessCode: 'admin123' });
+            }
+        }
+
         function setupRealtimeListener(user) {
-            // Using a public collection so clients can access without complex auth
-            // In a production app, we would use specific rules, but for this tool:
-            // /artifacts/{appId}/public/data/content_posts
             const q = collection(db, 'artifacts', appId, 'public', 'data', 'content_posts');
 
             onSnapshot(q, (snapshot) => {
@@ -73,8 +84,6 @@
                     posts.push({ id: doc.id, ...doc.data() });
                 });
 
-                // Sort purely client-side to avoid index errors
-                // Sort by timestamp desc (newest first)
                 posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
                 if (posts.length === 0) {
@@ -160,11 +169,11 @@
 
             // Admin Controls
             const adminControls = isWriterMode ? `
-                <div class="absolute top-2 right-2 flex gap-1">
-                    <button onclick="openEditModal('${post.id}', '${encodeURIComponent(JSON.stringify(post))}')" class="w-8 h-8 rounded-full bg-white shadow text-gray-600 hover:text-[#00418b] flex items-center justify-center">
+                <div class="absolute top-2 right-2 flex gap-1 z-10">
+                    <button onclick="openEditModal('${post.id}', '${encodeURIComponent(JSON.stringify(post))}')" class="w-8 h-8 rounded-full bg-white shadow text-gray-600 hover:text-[#00418b] flex items-center justify-center transition-transform hover:scale-110">
                         <i class="fa-solid fa-pen"></i>
                     </button>
-                    <button onclick="deletePost('${post.id}')" class="w-8 h-8 rounded-full bg-white shadow text-gray-600 hover:text-red-600 flex items-center justify-center">
+                    <button onclick="deletePost('${post.id}')" class="w-8 h-8 rounded-full bg-white shadow text-gray-600 hover:text-red-600 flex items-center justify-center transition-transform hover:scale-110">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
@@ -202,7 +211,7 @@
             postsContainer.appendChild(card);
         }
 
-        // --- Actions ---
+        // --- Post Actions ---
 
         window.updatePostStatus = async (postId, newStatus) => {
             try {
@@ -268,6 +277,95 @@
             }
         };
 
+        // --- Admin/Security Actions ---
+
+        window.attemptLogin = async (e) => {
+            e.preventDefault();
+            const inputCode = document.getElementById('admin-code-input').value;
+            const btn = document.getElementById('login-btn');
+            
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking...';
+
+            try {
+                const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_settings');
+                const docSnap = await getDoc(settingsRef);
+                
+                let correctCode = 'admin123'; // Fallback
+                if (docSnap.exists()) {
+                    correctCode = docSnap.data().accessCode;
+                }
+
+                if (inputCode === correctCode) {
+                    activateWriterMode();
+                    closeModal('login-modal');
+                    document.getElementById('admin-code-input').value = '';
+                    showToast("Welcome back, Admin!", "success");
+                } else {
+                    showToast("Incorrect Access Code", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Login Error", "error");
+            } finally {
+                btn.innerHTML = 'Unlock Admin Access';
+            }
+        };
+
+        window.handlePasswordChange = async (e) => {
+            e.preventDefault();
+            const newCode = document.getElementById('new-password').value;
+            const confirmCode = document.getElementById('confirm-password').value;
+
+            if (newCode.length < 4) {
+                showToast("Password is too short", "error");
+                return;
+            }
+            if (newCode !== confirmCode) {
+                showToast("Passwords do not match", "error");
+                return;
+            }
+
+            try {
+                const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_settings');
+                await setDoc(settingsRef, { accessCode: newCode }, { merge: true });
+                showToast("Access Code Updated Successfully", "success");
+                closeModal('password-modal');
+                document.getElementById('new-password').value = '';
+                document.getElementById('confirm-password').value = '';
+            } catch (err) {
+                console.error(err);
+                showToast("Error updating password", "error");
+            }
+        };
+
+        function activateWriterMode() {
+            isWriterMode = true;
+            fabBtn.classList.remove('hidden');
+            changePassBtn.classList.remove('hidden');
+            document.body.classList.add('writer-mode');
+            authToggleBtn.innerHTML = '<i class="fa-solid fa-lock-open text-green-400"></i>';
+            authToggleBtn.title = "Logout";
+            authToggleBtn.onclick = deactivateWriterMode;
+            
+            // Re-render to show delete/edit buttons
+            const q = collection(db, 'artifacts', appId, 'public', 'data', 'content_posts');
+            // We can just rely on the next snapshot or force a reload, but for simplicity we wait for real-time update or manual refresh. 
+            // To force update UI immediately:
+            if(currentUser) setupRealtimeListener(currentUser); 
+        }
+
+        function deactivateWriterMode() {
+            isWriterMode = false;
+            fabBtn.classList.add('hidden');
+            changePassBtn.classList.add('hidden');
+            document.body.classList.remove('writer-mode');
+            authToggleBtn.innerHTML = '<i class="fa-solid fa-lock"></i>';
+            authToggleBtn.title = "Writer Login";
+            authToggleBtn.onclick = openLoginModal;
+            showToast("Logged out of Admin Mode", "neutral");
+            if(currentUser) setupRealtimeListener(currentUser);
+        }
+
         // --- Modal & UI Logic ---
 
         window.openEditModal = (id, encodedPost) => {
@@ -290,10 +388,18 @@
         window.openContentOverlay = (encodedContent, encodedTitle) => {
             const content = decodeURIComponent(encodedContent);
             const title = decodeURIComponent(encodedTitle);
-            
             document.getElementById('overlay-title').innerText = title;
             document.getElementById('overlay-content').innerText = content;
             contentModal.showModal();
+        };
+
+        window.openLoginModal = () => {
+            loginModal.showModal();
+            setTimeout(() => document.getElementById('admin-code-input').focus(), 100);
+        };
+
+        window.openPasswordModal = () => {
+            passwordModal.showModal();
         };
 
         window.copyContent = () => {
@@ -322,29 +428,6 @@
 
         window.toggleCategories = () => {
             categoryModal.showModal();
-        };
-
-        window.toggleWriterMode = () => {
-            if (isWriterMode) {
-                isWriterMode = false;
-                fabBtn.classList.add('hidden');
-                document.body.classList.remove('writer-mode');
-                showToast("Switched to Client View", "neutral");
-                authToggleBtn.innerHTML = '<i class="fa-solid fa-lock"></i>';
-            } else {
-                const pass = prompt("Enter Writer Access Code (Try: 'writer')");
-                if (pass === 'writer') {
-                    isWriterMode = true;
-                    fabBtn.classList.remove('hidden');
-                    document.body.classList.add('writer-mode');
-                    showToast("Writer Mode Active", "success");
-                    authToggleBtn.innerHTML = '<i class="fa-solid fa-lock-open text-green-400"></i>';
-                } else if (pass !== null) {
-                    alert("Incorrect code");
-                }
-            }
-            // Trigger re-render to show/hide buttons
-            if (currentUser) setupRealtimeListener(currentUser);
         };
 
         // --- Toast Notification ---
@@ -378,6 +461,9 @@
         textarea::-webkit-scrollbar-track { background: transparent; }
         textarea::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
         
+        dialog {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
         dialog::backdrop {
             background: rgba(0, 52, 110, 0.4);
             backdrop-filter: blur(2px);
@@ -397,13 +483,13 @@
     <header class="bg-[#00346e] text-white shadow-lg sticky top-0 z-40">
         <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-4">
-                <!-- Branding Placeholder -->
+                <!-- Branding -->
                 <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-[#00346e] font-bold text-2xl shadow-inner">
                     <i class="fa-solid fa-feather-pointed"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-xl tracking-wide">BrandContent<span class="font-light text-blue-200">Portal</span></h1>
-                    <p class="text-xs text-blue-200">Review, Approve & Comment</p>
+                    <h1 class="font-bold text-2xl tracking-wider uppercase">POWERFUL</h1>
+                    <p class="text-xs text-blue-200 tracking-wide">Content Approval & Management</p>
                 </div>
             </div>
 
@@ -442,12 +528,31 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-[#00346e] text-blue-200 py-6 mt-12">
-        <div class="max-w-6xl mx-auto px-4 flex justify-between items-center text-xs">
-            <p>&copy; 2023 Content Portal. All rights reserved.</p>
-            <button id="auth-toggle" onclick="toggleWriterMode()" class="p-2 hover:text-white transition-colors opacity-50 hover:opacity-100" title="Writer Login">
-                <i class="fa-solid fa-lock"></i>
-            </button>
+    <footer class="bg-[#00346e] text-blue-200 py-8 mt-12 border-t border-blue-900">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            
+            <!-- Admin Toggles -->
+            <div class="flex gap-4 items-center">
+                 <button id="auth-toggle" onclick="openLoginModal()" class="p-2 hover:text-white transition-colors opacity-70 hover:opacity-100 flex items-center gap-2 text-xs" title="Writer Login">
+                    <i class="fa-solid fa-lock"></i> <span class="hidden md:inline">Admin Access</span>
+                </button>
+                <button id="change-pass-btn" onclick="openPasswordModal()" class="hidden text-xs hover:text-white underline opacity-70 hover:opacity-100">
+                    Change Password
+                </button>
+            </div>
+
+            <!-- Copyright -->
+            <div class="text-xs font-light text-center">
+                &copy; 2023 POWERFUL. All rights reserved.
+            </div>
+
+            <!-- Social Icons -->
+            <div class="flex gap-4 text-lg">
+                <a href="#" class="hover:text-white transition-colors hover:scale-110 transform"><i class="fa-brands fa-youtube"></i></a>
+                <a href="#" class="hover:text-white transition-colors hover:scale-110 transform"><i class="fa-brands fa-twitter"></i></a>
+                <a href="#" class="hover:text-white transition-colors hover:scale-110 transform"><i class="fa-brands fa-whatsapp"></i></a>
+                <a href="#" class="hover:text-white transition-colors hover:scale-110 transform"><i class="fa-solid fa-globe"></i></a>
+            </div>
         </div>
     </footer>
 
@@ -457,7 +562,7 @@
     </button>
 
     <!-- Category Modal -->
-    <dialog id="category-modal" class="rounded-2xl shadow-2xl p-0 w-full max-w-2xl bg-white overflow-hidden">
+    <dialog id="category-modal" class="rounded-2xl shadow-2xl p-0 w-full max-w-2xl bg-white overflow-hidden z-50">
         <div class="bg-[#00346e] p-6 text-white flex justify-between items-center">
             <h3 class="text-xl font-bold"><i class="fa-solid fa-tags mr-2"></i> Content Categories</h3>
             <button onclick="closeModal('category-modal')" class="text-white hover:text-red-300 transition-colors">
@@ -493,7 +598,7 @@
     </dialog>
 
     <!-- Post Edit/Create Modal -->
-    <dialog id="post-modal" class="rounded-xl shadow-2xl p-0 w-full max-w-lg bg-white">
+    <dialog id="post-modal" class="rounded-xl shadow-2xl p-0 w-full max-w-lg bg-white z-50">
         <form onsubmit="handlePostSubmit(event)">
             <div class="p-6">
                 <h3 id="modal-title" class="text-xl font-bold text-[#00346e] mb-4">New Content</h3>
@@ -523,7 +628,7 @@
     </dialog>
 
     <!-- Content View/Copy Modal -->
-    <dialog id="content-modal" class="rounded-xl shadow-2xl p-0 w-full max-w-3xl bg-white">
+    <dialog id="content-modal" class="rounded-xl shadow-2xl p-0 w-full max-w-3xl bg-white z-50">
         <div class="bg-gray-50 border-b border-gray-200 p-4 flex justify-between items-center sticky top-0">
             <h3 id="overlay-title" class="text-lg font-bold text-[#00346e] truncate pr-4">Content View</h3>
             <button onclick="closeModal('content-modal')" class="text-gray-400 hover:text-gray-600">
@@ -538,6 +643,51 @@
                 <i class="fa-regular fa-copy"></i> Copy to Clipboard
             </button>
         </div>
+    </dialog>
+
+    <!-- Login Modal -->
+    <dialog id="login-modal" class="rounded-xl shadow-2xl p-0 w-full max-w-sm bg-white z-50">
+        <form onsubmit="attemptLogin(event)" class="p-6">
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-2 text-[#00346e]">
+                    <i class="fa-solid fa-lock text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-[#00346e]">Admin Access</h3>
+                <p class="text-xs text-gray-500">Enter your team access code.</p>
+            </div>
+            
+            <div class="mb-4">
+                <input type="password" id="admin-code-input" placeholder="Access Code (Default: admin123)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-[#00418b] focus:border-[#00418b] text-center tracking-widest">
+            </div>
+
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal('login-modal')" class="flex-1 py-2 text-gray-500 hover:bg-gray-100 rounded-lg">Cancel</button>
+                <button type="submit" id="login-btn" class="flex-1 py-2 bg-[#00418b] text-white rounded-lg hover:bg-[#00346e] shadow-lg">Unlock</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Change Password Modal -->
+    <dialog id="password-modal" class="rounded-xl shadow-2xl p-0 w-full max-w-sm bg-white z-50">
+        <form onsubmit="handlePasswordChange(event)" class="p-6">
+            <h3 class="text-lg font-bold text-[#00346e] mb-4 border-b pb-2">Change Team Access Code</h3>
+            
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">New Access Code</label>
+                    <input type="password" id="new-password" required class="w-full p-2 border border-gray-300 rounded focus:ring-[#00418b] focus:border-[#00418b]">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Confirm Code</label>
+                    <input type="password" id="confirm-password" required class="w-full p-2 border border-gray-300 rounded focus:ring-[#00418b] focus:border-[#00418b]">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeModal('password-modal')" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 shadow">Update Code</button>
+            </div>
+        </form>
     </dialog>
 
 </body>
