@@ -7,7 +7,7 @@
     <!-- Using 'Source Sans 3' as a professional, humanist sans-serif alternative for Frutiger. -->
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Font Awesome for Social Icons and WhatsApp icon -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMDJc5nIz18qgUfXfO8gMv9qV9+M+R0b7pUvY+8S4hE4U/q8P8+2KxYd90B8v5fA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMDJc5nIz18qgUfXfO8gMv9qV9+LLMDJc5nIz18qgUfXfO8gMv9qV9+R0b7pUvY+8S4hE4U/q8P8+2KxYd90B8v5fA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         /* CSS for the Tool */
         :root {
@@ -582,26 +582,29 @@
 
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, setDoc, doc, onSnapshot, updateDoc, deleteDoc, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Updated imports to use a stable Firebase SDK version (10.12.3)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, doc, onSnapshot, updateDoc, deleteDoc, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
-        // --- Firebase Configuration and Initialization ---
-        // MANDATORY: Global variables injected by the Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // --- MANDATORY Firebase Configuration Setup ---
         
+        // 1. Retrieve Canvas provided globals
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
         let db;
         let auth;
-        let unsubscribePosts = null; // Listener for real-time post updates
+        let appInstance;
+        let unsubscribePosts = null; 
         let currentUserId = null;
-        let globalPosts = []; // Local cache of posts from Firestore
+        let globalPosts = []; 
 
-        // Constants 
-        const ADMIN_PASSWORD = "b4bee53ea9115d2c"; // UPDATED ADMIN PASSWORD
-        const VIEWER_CODE_DOC_PATH = `/artifacts/${appId}/public/data/config/viewer-code`; // Public path for shared viewer code
-        const POSTS_COLLECTION_PATH = `artifacts/${appId}/public/data/posts`; // Public path for shared posts
+        // Constants using the dynamic appId
+        const ADMIN_PASSWORD = "b4bee53ea9115d2c"; 
+        const VIEWER_CODE_DOC_PATH = `artifacts/${appId}/public/data/config/viewer-code`; 
+        const POSTS_COLLECTION_PATH = `artifacts/${appId}/public/data/posts`; 
         const COLOR_APPROVED = '#28a745'; 
         const COLOR_DISAPPROVED = '#dc3545';
         const COLOR_PENDING = '#ffc107';
@@ -610,51 +613,65 @@
         let activePostId = null;
         let isAuthReady = false;
 
-        setLogLevel('Debug'); // Enable Firestore logging
+        setLogLevel('Debug'); 
 
         // Initialize Firebase and Authentication
         async function initializeFirebase() {
-            if (!firebaseConfig) {
-                console.error("Firebase config is missing.");
+            if (!firebaseConfig || !firebaseConfig.projectId) {
+                console.error("Firebase config is missing or invalid. Check __firebase_config.");
                 document.getElementById('loading-overlay').textContent = "ERROR: Firebase config missing. Cannot connect to database.";
                 return;
             }
             
             try {
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
+                // 1. Initialize the app instance
+                appInstance = initializeApp(firebaseConfig);
+                
+                // 2. Get Auth and Firestore instances
+                auth = getAuth(appInstance);
+                db = getFirestore(appInstance);
 
-                // 1. Sign in using custom token or anonymously
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
+                console.log("Firebase App and Services initialized.");
+
+                // 3. Perform initial sign-in using provided token or anonymously
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("Signed in with custom token.");
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
+                } catch (error) {
+                    // This block catches sign-in errors but allows onAuthStateChanged to proceed
+                    console.error("Firebase Initial Sign-In Error:", error);
+                    // Crucial to display error but try to continue as onAuthStateChanged might still trigger
                 }
-
-                // 2. Wait for auth state change
+                
+                // 4. Wait for auth state change to confirm user and start listeners
                 onAuthStateChanged(auth, (user) => {
-                    if (user) {
+                    if (user && auth.currentUser) {
                         currentUserId = user.uid;
                         isAuthReady = true;
                         console.log("Firebase Auth Ready. User ID:", currentUserId);
-                        // Start listeners after auth is ready
+                        // Start listeners only after auth is confirmed ready
                         startPostsListener();
                         renderAdminManagement();
+                        
                         document.getElementById('loading-overlay').style.display = 'none';
+                        // Only show switch view button if sign-in succeeded
                         document.getElementById('switch-view-btn').style.display = 'block';
 
                     } else {
-                        console.log("No user signed in.");
-                        isAuthReady = true; // Still ready, but anonymous
-                        document.getElementById('loading-overlay').style.display = 'none';
-                        document.getElementById('switch-view-btn').style.display = 'block';
+                        isAuthReady = true; 
+                        document.getElementById('loading-overlay').textContent = "Authentication Failed. Please retry.";
+                        console.error("Authentication failed: No user found after sign-in attempt.");
                     }
                 });
 
             } catch (error) {
                 console.error("Firebase Initialization Error:", error);
-                document.getElementById('loading-overlay').textContent = `ERROR: Failed to connect to database. ${error.message}`;
+                document.getElementById('loading-overlay').textContent = `ERROR: Failed to initialize Firebase App. ${error.message}`;
             }
         }
         
@@ -664,7 +681,8 @@
          * Real-time listener for all posts. Updates the local cache (globalPosts).
          */
         function startPostsListener() {
-            if (!db || unsubscribePosts) return; // Ensure listener is not duplicated
+            // Guard clause to ensure db is initialized and listener isn't already active
+            if (!db || unsubscribePosts || !isAuthReady) return; 
 
             const postsCollection = collection(db, POSTS_COLLECTION_PATH);
             
@@ -674,20 +692,18 @@
                     id: doc.id,
                     ...doc.data()
                 }));
-                // Sort by creation time (assuming Firebase doc IDs often imply creation order, 
-                // but local sorting by an explicit timestamp or ID is safer if needed)
+                // Sort locally by creation date (newest first)
                 globalPosts.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
                 
                 console.log("Posts updated in real-time:", globalPosts.length);
 
-                // Only render if a role is active
                 if (currentRole === 'admin') {
                     renderAdminPosts();
                 } else if (currentRole === 'viewer') {
                     renderViewerPosts();
                 }
             }, (error) => {
-                console.error("Error listening to posts collection:", error);
+                console.error("Error listening to posts collection (Permission Denied likely):", error);
             });
         }
         
@@ -700,15 +716,13 @@
                 const postsCollection = collection(db, POSTS_COLLECTION_PATH);
                 await addDoc(postsCollection, {
                     ...postData,
-                    createdAt: new Date().toISOString() // Add timestamp for sorting
+                    createdAt: new Date().toISOString() 
                 });
                 console.log("Post published successfully.");
             } catch (error) {
                 console.error("Error publishing post:", error);
-                // Use custom alert replacement
                 const message = `Error publishing post: ${error.message}`;
                 console.error(message);
-                // Simple DOM update for error visibility (instead of alert)
                 document.getElementById('login-error').textContent = message;
                 document.getElementById('login-error').style.display = 'block';
             }
@@ -725,10 +739,8 @@
                 console.log(`Post ${postId} updated successfully.`);
             } catch (error) {
                 console.error(`Error updating post ${postId}:`, error);
-                // Use custom alert replacement
                 const message = `Error updating post: ${error.message}`;
                 console.error(message);
-                // Simple DOM update for error visibility (instead of alert)
                 document.getElementById('login-error').textContent = message;
                 document.getElementById('login-error').style.display = 'block';
             }
@@ -736,20 +748,16 @@
 
         /**
          * Deletes a post document from Firestore.
-         * FIXED: Clearer error message for security rule violation.
          */
         async function deletePostFromDB(postId) {
             if (!db || !postId) return;
             try {
-                // Construct the document reference using the correct path and ID
                 const postDoc = doc(db, POSTS_COLLECTION_PATH, postId);
                 await deleteDoc(postDoc);
                 console.log(`Post ${postId} deleted successfully.`);
             } catch (error) {
                 console.error(`Deletion of post ${postId} failed.`);
-                // CRITICAL: Log the security error possibility.
                 console.error(`POSSIBLE SECURITY RULE ERROR: ${error.message}`); 
-                // Simple DOM update for error visibility (instead of alert)
                 document.getElementById('login-error').textContent = `Error deleting post. Check console for "Permission Denied" errors.`;
                 document.getElementById('login-error').style.display = 'block';
             }
@@ -761,7 +769,7 @@
          * Fetches the Viewer Access Code from Firestore or creates a default if missing.
          */
         async function getViewerAccessCode() {
-            if (!db) return 'user'; // Fallback
+            if (!db) return 'user'; 
             try {
                 const codeDoc = doc(db, VIEWER_CODE_DOC_PATH);
                 const docSnap = await getDoc(codeDoc);
@@ -769,15 +777,14 @@
                 if (docSnap.exists() && docSnap.data().code) {
                     return docSnap.data().code;
                 } else {
-                    // Initialize default code if not found
                     const defaultCode = 'user';
-                    // We must ensure this setDoc runs only once or handles concurrent writes
+                    // Must ensure only admin can write, so we rely on security rules here.
                     await setDoc(codeDoc, { code: defaultCode }, { merge: true });
                     return defaultCode;
                 }
             } catch (e) {
                 console.error("Error fetching viewer code:", e);
-                return 'user'; // Safe fallback
+                return 'user'; 
             }
         }
 
@@ -791,7 +798,6 @@
             const newCode = newCodeInput.value.trim();
 
             if (newCode.length < 4) {
-                // Use console warning instead of alert
                 console.warn('Access Code must be at least 4 characters long.');
                 return;
             }
@@ -804,11 +810,9 @@
                 console.log(`Viewer Access Code successfully updated to: ${newCode}`);
             } catch (e) {
                 console.error("Error updating viewer code:", e);
-                // Use console warning instead of alert
                 console.error(`Error updating viewer code: ${e.message}`);
             }
         }
-        // Export to window for HTML access
         window.updateViewerAccessCode = updateViewerAccessCode;
 
 
@@ -842,16 +846,14 @@
 
         async function attemptLogin() {
             if (!isAuthReady) {
-                // Use console warning instead of alert
-                console.warn("Database connection not ready. Please wait a moment.");
+                console.warn("Authentication is not ready. Please wait for the initial connection.");
                 return;
             }
             const adminPassInput = document.getElementById('admin-pass-input');
             const viewerCodeInput = document.getElementById('viewer-code-input');
             const loginError = document.getElementById('login-error');
-            loginError.style.display = 'none'; // Hide error before new attempt
+            loginError.style.display = 'none'; 
 
-            // Determine which input is currently visible for login attempt
             const isViewerLoginAttempt = viewerCodeInput.style.display !== 'none';
             
             let authenticated = false;
@@ -876,29 +878,27 @@
                 loginError.style.display = 'block';
             }
         }
-        // Export to window for HTML access
         window.attemptLogin = attemptLogin;
         
-        // Initial setup to handle the dual console switch logic on the login screen
         window.onload = function() {
-            initializeFirebase(); // Start Firebase connection on load
+            // Initiate Firebase Initialization and Authentication
+            initializeFirebase(); 
 
             const switchBtn = document.getElementById('switch-view-btn');
             const loginInstruction = document.getElementById('login-instruction');
             const adminPassInput = document.getElementById('admin-pass-input');
             const viewerCodeInput = document.getElementById('viewer-code-input');
             
-            // Initial setting: Assume Viewer Login is the default shown
+            // Set initial state to Viewer Login
             viewerCodeInput.style.display = 'block';
             adminPassInput.style.display = 'none';
-            // IMPORTANT: The button text should guide the user to the *other* option
             switchBtn.textContent = 'Admin Login'; 
 
 
             switchBtn.onclick = () => {
+                // Toggle login mode
                 const isViewingAdmin = adminPassInput.style.display === 'block';
 
-                // If currently viewing ADMIN login, switch to VIEWER login
                 if (isViewingAdmin) {
                     viewerCodeInput.style.display = 'block';
                     adminPassInput.style.display = 'none';
@@ -906,7 +906,6 @@
                     loginInstruction.textContent = 'Type in the code/password provided by your content manager.';
                     switchBtn.textContent = 'Admin Login';
                 } 
-                // If currently viewing VIEWER login, switch to ADMIN login
                 else {
                     viewerCodeInput.style.display = 'none';
                     adminPassInput.style.display = 'block';
@@ -917,7 +916,6 @@
                 document.getElementById('login-error').style.display = 'none';
             };
             
-            // Form submission logic
             document.getElementById('create-post-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 const heading = document.getElementById('post-heading').value.trim();
@@ -939,11 +937,9 @@
                 
                 createPost(newPost);
                 
-                // Clear form
                 this.reset();
             });
 
-            // Close modal when user clicks outside of it
             window.onclick = function(event) {
                 const postModal = document.getElementById('post-modal');
                 const editModal = document.getElementById('admin-edit-modal');
@@ -958,16 +954,12 @@
 
         // --- Admin Console: Render, Edit, Delete Logic (Exported for HTML) ---
 
-        /**
-         * Deletes a post immediately without confirmation, as requested by admin user.
-         * The primary protection is that the button is only visible to the admin.
-         */
         function deletePost(id) {
             console.log(`Admin deleting post ID: ${id} without confirmation.`);
-            // Direct call to deletePostFromDB as requested.
+            // Using custom modal is best practice, but for simplicity here, we proceed with direct deletion
             deletePostFromDB(id);
         }
-        window.deletePost = deletePost; // Export to window
+        window.deletePost = deletePost; 
 
         function openAdminEditModal(id) {
             const post = globalPosts.find(p => p.id === id);
@@ -975,14 +967,12 @@
 
             activePostId = id;
             
-            // Populate Modal Fields
             document.getElementById('edit-post-id').value = post.id;
             document.getElementById('edit-modal-heading-title').textContent = post.heading;
             document.getElementById('edit-post-heading').value = post.heading;
             document.getElementById('edit-post-text').value = post.text;
             document.getElementById('edit-post-media-link').value = post.mediaLink;
             
-            // Display status and comment for context
             const statusEl = document.getElementById('edit-modal-status');
             statusEl.textContent = post.status;
             statusEl.className = `post-status status-${post.status}`;
@@ -990,7 +980,7 @@
             
             document.getElementById('admin-edit-modal').style.display = 'block';
         }
-        window.openAdminEditModal = openAdminEditModal; // Export to window
+        window.openAdminEditModal = openAdminEditModal; 
 
         function saveAdminEdit() {
             const id = document.getElementById('edit-post-id').value;
@@ -1007,9 +997,8 @@
                 heading: heading,
                 text: text,
                 mediaLink: mediaLink,
-                // Editing the post resets the status to pending to force re-review
-                status: 'Pending',
-                comment: '' // Clear viewer comment on edit
+                status: 'Pending', // Editing resets status for re-review
+                comment: '' 
             };
             
             updatePost(id, dataToUpdate).then(() => {
@@ -1017,14 +1006,13 @@
                 console.log(`Post "${heading}" updated successfully. Status reset to Pending.`);
             });
         }
-        window.saveAdminEdit = saveAdminEdit; // Export to window
+        window.saveAdminEdit = saveAdminEdit; 
 
 
-        // --- Viewer Console Logic ---
+        // --- Admin Console: Rendering ---
         function renderAdminPosts() {
             const postList = document.getElementById('admin-post-list');
             postList.innerHTML = '';
-            // Use globalPosts which is updated in real-time by the listener
             const posts = globalPosts; 
 
             if (posts.length === 0) {
@@ -1049,7 +1037,6 @@
                         <span class="post-status status-${post.status}">${post.status}</span>
                         <div class="admin-actions">
                             <button class="btn-edit" onclick="openAdminEditModal('${post.id}')">✏️ Edit</button>
-                            <!-- DELETE FUNCTION CALL -->
                             <button class="btn-disapprove" style="background-color: #f44336;" onclick="deletePost('${post.id}')">🗑️ Delete</button>
                         </div>
                     </div>
@@ -1059,6 +1046,7 @@
         }
 
 
+        // --- Viewer Console: Rendering & Review Logic ---
         function renderViewerPosts() {
             const postListDiv = document.getElementById('viewer-post-list');
             postListDiv.innerHTML = '';
@@ -1078,7 +1066,6 @@
                 let summaryText = post.text.substring(0, 100);
                 if (post.text.length > 100) summaryText += '...';
 
-                // Use JS constants for status color
                 const statusColor = post.status === 'Approved' ? COLOR_APPROVED : post.status === 'Disapproved' ? COLOR_DISAPPROVED : COLOR_PENDING;
 
                 div.innerHTML = `
@@ -1105,12 +1092,11 @@
             const statusEl = document.getElementById('modal-status');
             statusEl.textContent = post.status;
             
-            // Use JS constants for status color
             statusEl.style.color = post.status === 'Approved' ? COLOR_APPROVED : post.status === 'Disapproved' ? COLOR_DISAPPROVED : COLOR_PENDING;
 
             const mediaEl = document.getElementById('modal-media');
             if (post.mediaLink) {
-                // Image URL fallback for demonstration purposes
+                // Image fallback for public images
                 mediaEl.onerror = () => { mediaEl.src = `https://placehold.co/800x450/cccccc/333333?text=Media+Unavailable`; };
                 mediaEl.src = post.mediaLink;
                 mediaEl.style.display = 'block';
@@ -1118,31 +1104,25 @@
                 mediaEl.style.display = 'none';
             }
 
-            // Populate the comment box with the existing comment
             document.getElementById('modal-comment-box').value = post.comment || '';
             document.getElementById('modal-saved-comment').textContent = post.comment || 'No comment yet.';
 
             document.getElementById('post-modal').style.display = 'block';
         }
-        window.openPostModal = openPostModal; // Export to window
+        window.openPostModal = openPostModal; 
 
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
             activePostId = null;
-            // The real-time listener will handle re-rendering, but call them explicitly 
-            // to update immediately if the user was just logged in or switched.
+            // Force a re-render of the relevant list to reflect the latest status/comment from the globalPosts update
             if (currentRole === 'viewer') {
                 renderViewerPosts();
             } else if (currentRole === 'admin') {
                 renderAdminPosts();
             }
         }
-        window.closeModal = closeModal; // Export to window
+        window.closeModal = closeModal; 
 
-        /**
-         * The core function that handles the Viewer's action (Approve/Reject) and saves the comment
-         * directly to Firestore.
-         */
         function reviewPost(status) {
             if (!activePostId) return;
 
@@ -1154,16 +1134,15 @@
             };
             
             updatePost(activePostId, dataToUpdate).then(() => {
-                // Update modal display immediately, as Firestore update might take a moment
+                // Optimistically update modal display
                 document.getElementById('modal-status').textContent = status;
                 document.getElementById('modal-status').style.color = status === 'Approved' ? COLOR_APPROVED : status === 'Disapproved' ? COLOR_DISAPPROVED : COLOR_PENDING;
                 document.getElementById('modal-saved-comment').textContent = comment || 'No comment yet.';
 
-                // Use console message instead of alert
                 console.log(`Review submitted! Post is marked as ${status}. Comment saved.`);
             });
         }
-        window.reviewPost = reviewPost; // Export to window
+        window.reviewPost = reviewPost; 
 
     </script>
 </body>
