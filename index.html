@@ -225,14 +225,18 @@
             left: 0;
             width: 100%;
             height: 100%;
+            overflow: hidden; /* Prevent scrolling when loading */
             background: rgba(255, 255, 255, 0.8);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             font-size: 1.2rem;
             font-weight: 600;
             z-index: 200;
             color: var(--color-primary-dark);
+            text-align: center;
+            padding: 20px;
         }
         /* Spinner */
         .spinner {
@@ -242,7 +246,7 @@
             border-radius: 50%;
             border-left-color: var(--color-primary-medium);
             animation: spin 1s ease infinite;
-            margin-right: 15px;
+            margin-bottom: 15px;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -413,6 +417,7 @@
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>
         Authenticating and connecting to the database...
+        <p style="font-size: 0.9em; margin-top: 15px;">If this persists, check your browser console for configuration errors.</p>
     </div>
 
     <div class="container">
@@ -600,33 +605,21 @@
             firebaseConfig = JSON.parse(__firebase_config);
         } else {
             // !!! IMPORTANT: FOR LOCAL OR GITHUB DEPLOYMENT ONLY !!!
-            // REPLACE THE PLACEHOLDERS BELOW WITH YOUR ACTUAL FIREBASE CONFIGURATION OBJECT.
-            // You can get this from your Firebase console -> Project settings.
+            // -----------------------------------------------------------------------------------------
+            // 🚨🚨🚨 PLEASE CHECK THE SYNTAX IN THIS BLOCK CAREFULLY! 🚨🚨🚨
+            // The "SyntaxError" is almost certainly here. Ensure all values are in DOUBLE QUOTES 
+            // and key:value pairs are separated by COMMAS.
+            // -----------------------------------------------------------------------------------------
             console.warn("Using fallback Firebase configuration. Please update with your project details for external hosting.");
             firebaseConfig = {
-                apiKey: "const firebaseConfig = {
-
-    apiKey: "AIzaSyDnhYIj8cL22hsyoKGEQbt4fpPCMaxKouk",
-
-    authDomain: "powerful-e53bd.firebaseapp.com",
-
-    projectId: "powerful-e53bd",
-
-    storageBucket: "powerful-e53bd.firebasestorage.app",
-
-    messagingSenderId: "662417188692",
-
-    appId: "1:662417188692:web:d4b0de4cfb557b2f4b4ac1",
-
-    measurementId: "G-HRQ3F3C71K"
-
-  };", 
-                authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-                projectId: "YOUR_PROJECT_ID", // MUST BE VALID
-                storageBucket: "YOUR_PROJECT_ID.appspot.com",
-                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-                appId: "YOUR_APP_ID",
-                measurementId: "YOUR_MEASUREMENT_ID"
+                // Line 128: Check this line
+                apiKey: "AIzaSyDnhYIj8cL22hsyoKGEQbt4fpPCMaxKouk", 
+                authDomain: "powerful-e53bd.firebaseapp.com",
+                projectId: "powerful-e53bd", // MUST BE VALID
+                storageBucket: "powerful-e53bd.firebasestorage.app",
+                messagingSenderId: "662417188692",
+                appId: "1:662417188692:web:d4b0de4cfb557b2f4b4ac1",
+                measurementId: "G-HRQ3F3C71K" // Line 135: NO COMMA HERE
             };
         }
 
@@ -654,9 +647,17 @@
 
         // Initialize Firebase and Authentication
         async function initializeFirebase() {
-            if (!firebaseConfig || !firebaseConfig.projectId || firebaseConfig.projectId === "YOUR_PROJECT_ID") {
+            // Updated check to catch the config error early and clearly
+            if (!firebaseConfig || !firebaseConfig.projectId || firebaseConfig.projectId === "YOUR_PROJECT_ID" || Object.keys(firebaseConfig).length < 6) {
                 console.error("Firebase config is missing or invalid. Cannot connect to database.");
-                document.getElementById('loading-overlay').textContent = "ERROR: Firebase config missing. If deployed externally (e.g., GitHub), update the 'firebaseConfig' object in the script.";
+                document.getElementById('loading-overlay').innerHTML = `
+                    <p style="color: var(--color-disapproved); font-weight: 700;">
+                        FATAL ERROR: Configuration is missing or has a Syntax Error.
+                    </p>
+                    <p style="font-size: 0.9em; max-width: 400px;">
+                        Please check the Firebase config object around Line 128 of the code for missing quotes, commas, or wrong characters.
+                    </p>
+                `;
                 return;
             }
             
@@ -674,14 +675,14 @@
                 try {
                     if (initialAuthToken) {
                         await signInWithCustomToken(auth, initialAuthToken);
-                        console.log("Signed in with custom token.");
+                        console.log("Signed in with custom token (Canvas).");
                     } else {
                         await signInAnonymously(auth);
-                        console.log("Signed in anonymously.");
+                        console.log("Signed in anonymously (External Deployment).");
                     }
                 } catch (error) {
                     // This block catches sign-in errors but allows onAuthStateChanged to proceed
-                    console.error("Firebase Initial Sign-In Error:", error);
+                    console.error("Firebase Initial Sign-In Error (The connection works, but authentication failed):", error);
                     // Crucial to display error but try to continue as onAuthStateChanged might still trigger
                 }
                 
