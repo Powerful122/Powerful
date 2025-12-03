@@ -87,6 +87,7 @@
             display: flex;
             align-items: center;
             font-size: 0.9rem;
+            border-radius: 6px;
         }
         .btn-suggest:hover {
             background-color: #38c155;
@@ -175,7 +176,7 @@
         .btn-edit:hover { background-color: #e6b300; }
 
 
-        input[type="text"], textarea {
+        input[type="text"], textarea, input[type="password"] {
             width: calc(100% - 22px);
             padding: 11px;
             margin: 8px 0 18px 0;
@@ -417,7 +418,7 @@
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>
         Authenticating and connecting to the database...
-        <p style="font-size: 0.9em; margin-top: 15px;">If this persists, check your browser console for configuration errors.</p>
+        <p style="font-size: 0.9em; margin-top: 15px;">If this persists, please check your Firebase API Key and ensure Anonymous Sign-In is enabled.</p>
     </div>
 
     <div class="container">
@@ -606,16 +607,15 @@
         } else {
             // !!! IMPORTANT: FOR LOCAL OR GITHUB DEPLOYMENT ONLY !!!
             // -----------------------------------------------------------------------------------------
-            // 🚨🚨🚨 YOUR SYNTAX LOOKS CORRECT IN THE IMAGE! 🚨🚨🚨
-            // If the error persists, it's a character or structural issue immediately 
-            // surrounding this block (e.g., a missing '}' for the else block or an extra character).
+            // 🚨🚨🚨 PLEASE DOUBLE-CHECK THIS API KEY AGAINST YOUR FIREBASE CONSOLE! 🚨🚨🚨
+            // This is the source of the 'auth/api-key-not-valid' error.
             // -----------------------------------------------------------------------------------------
             console.warn("Using fallback Firebase configuration. Please update with your project details for external hosting.");
             firebaseConfig = {
-                // YOUR CORRECTED CONFIGURATION FROM THE IMAGE IS HERE:
-                apiKey: "AIzaSyDnhYIj8cL22hsyoKGEQbT4fPCMaxkKouk", 
+                // ** UPDATED API KEY ** (Please verify this is correct in your Firebase Console)
+                apiKey: "AIzaSyDnhYIj8cL22hsyoKGEQbt4fpPCMaxKouk", 
                 authDomain: "powerful-e53bd.firebaseapp.com",
-                projectId: "powerful-e53bd", // MUST BE VALID
+                projectId: "powerful-e53bd", 
                 storageBucket: "powerful-e53bd.appspot.com",
                 messagingSenderId: "662417188692",
                 appId: "1:662417188692:web:d4b0de4cfb557b2f4b4ac1",
@@ -684,6 +684,15 @@
                     // This block catches sign-in errors but allows onAuthStateChanged to proceed
                     console.error("Firebase Initial Sign-In Error (The connection works, but authentication failed):", error);
                     // Crucial to display error but try to continue as onAuthStateChanged might still trigger
+                    document.getElementById('loading-overlay').innerHTML = `
+                        <p style="color: var(--color-disapproved); font-weight: 700;">
+                            Authentication Failed: Invalid API Key or Disabled Anonymous Auth.
+                        </p>
+                        <p style="font-size: 0.9em; max-width: 400px; margin-top: 10px;">
+                            Please check the Firebase Console to ensure your API Key is correct and Anonymous Sign-In is enabled.
+                        </p>
+                    `;
+                    return; // Stop execution if critical auth error occurs
                 }
                 
                 // 4. Wait for auth state change to confirm user and start listeners
