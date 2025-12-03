@@ -606,20 +606,20 @@
         } else {
             // !!! IMPORTANT: FOR LOCAL OR GITHUB DEPLOYMENT ONLY !!!
             // -----------------------------------------------------------------------------------------
-            // 🚨🚨🚨 PLEASE CHECK THE SYNTAX IN THIS BLOCK CAREFULLY! 🚨🚨🚨
-            // The "SyntaxError" is almost certainly here. Ensure all values are in DOUBLE QUOTES 
-            // and key:value pairs are separated by COMMAS.
+            // 🚨🚨🚨 YOUR SYNTAX LOOKS CORRECT IN THE IMAGE! 🚨🚨🚨
+            // If the error persists, it's a character or structural issue immediately 
+            // surrounding this block (e.g., a missing '}' for the else block or an extra character).
             // -----------------------------------------------------------------------------------------
             console.warn("Using fallback Firebase configuration. Please update with your project details for external hosting.");
             firebaseConfig = {
-                // Line 128: Check this line
-                apiKey: "AIzaSyDnhYIj8cL22hsyoKGEQbt4fpPCMaxKouk", 
+                // YOUR CORRECTED CONFIGURATION FROM THE IMAGE IS HERE:
+                apiKey: "AIzaSyDnhYIj8cL22hsyoKGEQbT4fPCMaxkKouk", 
                 authDomain: "powerful-e53bd.firebaseapp.com",
                 projectId: "powerful-e53bd", // MUST BE VALID
-                storageBucket: "powerful-e53bd.firebasestorage.app",
+                storageBucket: "powerful-e53bd.appspot.com",
                 messagingSenderId: "662417188692",
                 appId: "1:662417188692:web:d4b0de4cfb557b2f4b4ac1",
-                measurementId: "G-HRQ3F3C71K" // Line 135: NO COMMA HERE
+                measurementId: "G-HRQ3F3C71K" 
             };
         }
 
