@@ -6,6 +6,8 @@
     <title>Powerful - Content Approval Console</title>
     <!-- Using 'Source Sans 3' as a professional, humanist sans-serif alternative for Frutiger. -->
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Social Icons and WhatsApp icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMDJc5nIz18qgUfXfO8gMv9qV9+M+R0b7pUvY+8S4hE4U/q8P8+2KxYd90B8v5fA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         /* CSS for the Tool */
         :root {
@@ -25,8 +27,9 @@
             margin: 0;
             padding: 0;
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            flex-direction: column; /* Changed to column for sticky footer */
+            justify-content: flex-start;
+            align-items: center;
             min-height: 100vh;
             padding-top: 20px;
         }
@@ -39,6 +42,7 @@
             border-radius: 12px;
             overflow: hidden;
             margin-bottom: 20px;
+            flex-grow: 1; /* Allow container to grow */
         }
 
         /* --- Header & Branding --- */
@@ -50,6 +54,7 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 5px solid var(--color-primary-light);
+            position: relative; /* Needed for absolute positioning of CTA */
         }
         header h1 {
             margin: 0;
@@ -65,6 +70,71 @@
             display: flex;
             align-items: center;
         }
+
+        /* NEW: CTA Container for "Suggest" Button and Switch Button */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px; /* Spacing between Suggest and Switch buttons */
+        }
+
+        /* Custom style for the Suggest button (CTA) */
+        .btn-suggest {
+            background-color: var(--color-approved); /* Green for visibility/call to action */
+            color: white;
+            padding: 8px 14px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        .btn-suggest:hover {
+            background-color: #38c155;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .btn-suggest i {
+            margin-right: 8px;
+        }
+
+
+        /* --- Footer Styles --- */
+        footer {
+            width: 100%;
+            max-width: 1200px;
+            background-color: var(--color-primary-dark); /* Match header */
+            color: white;
+            padding: 20px 25px;
+            border-radius: 0 0 12px 12px;
+            text-align: center;
+            margin-top: auto; /* Push footer to the bottom */
+            box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .footer-content {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 95%;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+        .social-icons a {
+            color: white;
+            margin: 0 10px;
+            font-size: 1.5rem;
+            transition: color 0.3s;
+        }
+        .social-icons a:hover {
+            color: var(--color-primary-light);
+        }
+        .copyright {
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
 
         /* --- Global Styles --- */
         .content {
@@ -312,6 +382,30 @@
             .admin-actions { margin-top: 10px; }
             .post-status { margin-left: 0; margin-top: 10px; }
             .modal-content { margin: 10vh auto; }
+            .footer-content {
+                flex-direction: column;
+            }
+            .copyright {
+                order: 2;
+                margin-top: 15px;
+            }
+            .social-icons {
+                order: 1;
+                margin-bottom: 15px;
+            }
+            .header-actions {
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 5px;
+            }
+            .btn-suggest {
+                order: 1; /* Suggest button first */
+            }
+            #switch-view-btn {
+                order: 2; /* Switch button second */
+                font-size: 0.8rem;
+                padding: 6px 10px;
+            }
         }
     </style>
 </head>
@@ -325,10 +419,19 @@
         <header>
             <div class="logo-container">
                 <img src="https://www.powerful.ng/logo_with_black_BG-removebg-preview.png" alt="Powerful Logo" class="logo">
-                <h1 style="margin-left: 10px;">Powerful Console</h1>
+                <h1>Content Approval Console</h1>
             </div>
-            <!-- This button reloads the page to force the login screen based on current role -->
-            <button id="switch-view-btn" class="btn-primary" style="display: none;">Switch Console</button>
+            
+            <!-- NEW: Header Actions Container -->
+            <div class="header-actions">
+                <!-- NEW: Suggest Button / Client CTA -->
+                <a href="https://wa.me/2348147831865" target="_blank" class="btn-suggest">
+                    <i class="fab fa-whatsapp"></i> Suggest
+                </a>
+                
+                <!-- Role Switching Button -->
+                <button id="switch-view-btn" class="btn-primary" style="display: none;">Switch Console</button>
+            </div>
         </header>
 
         <div class="content">
@@ -336,7 +439,8 @@
             <div id="login-section">
                 <div class="login-box">
                     <h2>Welcome to Powerful</h2>
-                    <p id="login-instruction" style="color: var(--color-primary-dark); font-weight: 600;">
+                    <!-- Font size increased by 20% to 1.2em -->
+                    <p id="login-instruction" style="color: var(--color-primary-dark); font-weight: 600; font-size: 1.2em;">
                         Type in the code/password provided by your content manager.
                     </p>
                     <input type="password" id="admin-pass-input" placeholder="Admin Password" style="display: none;">
@@ -369,8 +473,7 @@
                 </form>
 
                 <hr>
-                
-                <!-- NEW SECTION: Manage Viewer Access Code -->
+
                 <h3>Manage Viewer Access Code</h3>
                 <div id="manage-access-code" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px; background-color: white; margin-bottom: 20px;">
                     <label for="new-viewer-code" style="margin-top: 0;">New Viewer Access Code</label>
@@ -405,6 +508,24 @@
             </div>
         </div>
     </div>
+    
+    <!-- --- Footer Section --- -->
+    <footer>
+        <div class="footer-content">
+            <div class="social-icons">
+                <a href="https://powerful.ng" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
+                <a href="https://web.facebook.com/profile.php?id=61579604531307" target="_blank" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://x.com/Powerful_HQ" target="_blank" title="X (Twitter)"><i class="fab fa-x-twitter"></i></a>
+                <a href="https://www.youtube.com/@powerful_hq" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+                <a href="https://wa.me/2348147831865" target="_blank" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+            </div>
+            <!-- Copyright year corrected to 2025 -->
+            <div class="copyright">
+                &copy; 2025 Powerful. All Rights Reserved.
+            </div>
+        </div>
+    </footer>
+
 
     <!-- --- Viewer Post Overlay Modal --- -->
     <div id="post-modal" class="modal">
@@ -478,7 +599,7 @@
         let globalPosts = []; // Local cache of posts from Firestore
 
         // Constants 
-        const ADMIN_PASSWORD = "powerful"; 
+        const ADMIN_PASSWORD = "b4bee53ea9115d2c"; // UPDATED ADMIN PASSWORD
         const VIEWER_CODE_DOC_PATH = `/artifacts/${appId}/public/data/config/viewer-code`; // Public path for shared viewer code
         const POSTS_COLLECTION_PATH = `artifacts/${appId}/public/data/posts`; // Public path for shared posts
         const COLOR_APPROVED = '#28a745'; 
@@ -770,7 +891,8 @@
             // Initial setting: Assume Viewer Login is the default shown
             viewerCodeInput.style.display = 'block';
             adminPassInput.style.display = 'none';
-            switchBtn.textContent = 'Admin Login';
+            // IMPORTANT: The button text should guide the user to the *other* option
+            switchBtn.textContent = 'Admin Login'; 
 
 
             switchBtn.onclick = () => {
