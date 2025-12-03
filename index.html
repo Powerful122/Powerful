@@ -589,10 +589,47 @@
 
         // --- MANDATORY Firebase Configuration Setup ---
         
-        // 1. Retrieve Canvas provided globals
+        // 1. Retrieve Canvas provided globals (Preferred) or use a fallback config (For GitHub/Local Hosting)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let firebaseConfig = {};
+
+        if (typeof __firebase_config !== 'undefined') {
+            // Use config provided by the Canvas environment (works in preview)
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            // !!! IMPORTANT: FOR LOCAL OR GITHUB DEPLOYMENT ONLY !!!
+            // REPLACE THE PLACEHOLDERS BELOW WITH YOUR ACTUAL FIREBASE CONFIGURATION OBJECT.
+            // You can get this from your Firebase console -> Project settings.
+            console.warn("Using fallback Firebase configuration. Please update with your project details for external hosting.");
+            firebaseConfig = {
+                apiKey: "const firebaseConfig = {
+
+    apiKey: "AIzaSyDnhYIj8cL22hsyoKGEQbt4fpPCMaxKouk",
+
+    authDomain: "powerful-e53bd.firebaseapp.com",
+
+    projectId: "powerful-e53bd",
+
+    storageBucket: "powerful-e53bd.firebasestorage.app",
+
+    messagingSenderId: "662417188692",
+
+    appId: "1:662417188692:web:d4b0de4cfb557b2f4b4ac1",
+
+    measurementId: "G-HRQ3F3C71K"
+
+  };", 
+                authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+                projectId: "YOUR_PROJECT_ID", // MUST BE VALID
+                storageBucket: "YOUR_PROJECT_ID.appspot.com",
+                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                appId: "YOUR_APP_ID",
+                measurementId: "YOUR_MEASUREMENT_ID"
+            };
+        }
+
 
         let db;
         let auth;
@@ -617,9 +654,9 @@
 
         // Initialize Firebase and Authentication
         async function initializeFirebase() {
-            if (!firebaseConfig || !firebaseConfig.projectId) {
-                console.error("Firebase config is missing or invalid. Check __firebase_config.");
-                document.getElementById('loading-overlay').textContent = "ERROR: Firebase config missing. Cannot connect to database.";
+            if (!firebaseConfig || !firebaseConfig.projectId || firebaseConfig.projectId === "YOUR_PROJECT_ID") {
+                console.error("Firebase config is missing or invalid. Cannot connect to database.");
+                document.getElementById('loading-overlay').textContent = "ERROR: Firebase config missing. If deployed externally (e.g., GitHub), update the 'firebaseConfig' object in the script.";
                 return;
             }
             
