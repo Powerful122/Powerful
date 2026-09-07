@@ -9,113 +9,128 @@
         body {
             background-color: #C0C0C0;
             color: #000000;
+            /* Using Times New Roman as requested for body, 
+               but Monospace for the "Background" section data */
             font-family: "Times New Roman", Times, serif;
-            line-height: 1.5;
+            line-height: 1.6;
             margin: 0;
-            padding: 40px 20px;
+            padding: 60px 20px;
             display: flex;
             justify-content: center;
         }
 
         .container {
-            max-width: 650px;
+            max-width: 800px;
             width: 100%;
         }
 
         /* Typography */
         h1 {
-            font-size: 2.2rem;
-            margin-bottom: 5px;
+            font-size: 2.5rem;
+            margin-bottom: 0;
             font-weight: normal;
         }
 
         .sub-header {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
+            margin-bottom: 50px;
+        }
+
+        /* The "BACKGROUND" Header style from the image */
+        .section-label {
+            font-family: monospace;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 0.85rem;
+            color: #333;
+            border-bottom: 1px solid #a3a3a3;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        /* The "Big Stats" Row (1 exit, BA Uniport) */
+        .stats-row {
+            display: flex;
+            gap: 60px; /* Space between stats */
+            margin-bottom: 40px;
+            border-bottom: 1px solid #a3a3a3;
+            padding-bottom: 30px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-big {
+            font-family: monospace;
+            font-size: 2.2rem;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #555; /* Muted grey for the label */
+            margin-top: 5px;
+        }
+
+        /* The detailed list below stats */
+        .details-list {
+            font-family: monospace; /* Monospace makes it look like the image */
+            font-size: 1.05rem;
             margin-bottom: 40px;
         }
 
-        .section-title {
+        .details-list div {
+            margin-bottom: 12px;
+        }
+
+        /* Other Sections */
+        .section-title-simple {
             font-weight: bold;
             font-size: 1.1rem;
             margin-top: 40px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             border-bottom: 1px solid #000;
-            display: inline-block;
-            width: 100%;
         }
 
-        a {
-            color: #000;
-            text-decoration: underline;
-        }
-
-        a:hover {
-            text-decoration: none;
-        }
-
-        /* Layout Grids */
         .grid-row {
             display: flex;
             justify-content: space-between;
+            font-family: monospace;
             margin-bottom: 8px;
-            gap: 20px;
         }
 
-        .grid-left {
-            flex: 1;
-        }
-
-        .grid-right {
-            text-align: right;
-            color: #333;
-        }
-
-        .list-item {
-            margin-bottom: 15px;
-        }
-
-        .meta-info {
-            font-style: italic;
-            font-size: 0.95rem;
-        }
-
-        .interests-list {
-            margin-top: 10px;
-        }
-
+        a { color: #000; text-decoration: underline; }
+        
         .quote {
-            margin-top: 60px;
+            margin-top: 80px;
             font-style: italic;
+            text-align: center;
             border-top: 1px solid #000;
             padding-top: 20px;
-            text-align: center;
         }
 
         footer {
-            margin-top: 40px;
-            font-size: 0.9rem;
+            margin-top: 30px;
             text-align: center;
-            opacity: 0.8;
+            font-size: 0.8rem;
+            font-family: monospace;
         }
 
-        /* Responsive */
-        @media (max-width: 500px) {
-            .grid-row {
-                flex-direction: column;
-                gap: 2px;
-                margin-bottom: 15px;
-            }
-            .grid-right {
-                text-align: left;
-                font-size: 0.9rem;
-            }
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .stats-row { gap: 30px; }
+            .stat-big { font-size: 1.8rem; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- Header Area -->
+    <!-- Header -->
     <header>
         <h1>Joseph Dominic</h1>
         <div class="sub-header">
@@ -123,87 +138,85 @@
         </div>
     </header>
 
+    <!-- Professional Background Section (Matching your image) -->
+    <section>
+        <div class="section-label">Background</div>
+        
+        <div class="stats-row">
+            <div class="stat-item">
+                <span class="stat-big">1</span>
+                <span class="stat-label">exit</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-big">BA</span>
+                <span class="stat-label">Uniport</span>
+            </div>
+        </div>
+
+        <div class="details-list">
+            <div>BA Religious and Cultural studies, Uniport</div>
+            <div>BA Thesis: The Role of Media in Shaping Intercultural Communication in the University of Port Harcourt</div>
+        </div>
+    </section>
+
     <!-- Now Section -->
     <section>
-        <div class="section-title">Now</div>
-        <p><strong><a href="https://www.powerful.ng">powerful</a></strong></p>
+        <div class="section-title-simple">Now</div>
+        <p style="font-family: monospace;"><strong><a href="https://www.powerful.ng">powerful</a></strong></p>
         <p>Learn "how to about": Lending | Staking | RWA | Spots | Perps | NFT | only on Solana network</p>
     </section>
 
-    <!-- Recents Section -->
+    <!-- Recents -->
     <section>
-        <div class="section-title">Recent</div>
-        <div class="list-item">
-            Capital is not just an Advantage in Trading. It is a Risk Management Tool <br>
+        <div class="section-title-simple">Recent</div>
+        <div style="font-family: monospace; margin-bottom: 15px;">
+            Capital is not just an Advantage in Trading. It is a Risk Management Tool<br>
             <a href="https://www.powerful.ng/2026/09/blog-post.html">powerful.ng/blog-post</a>
         </div>
-        <div class="list-item">
-            SPCX: SpaceX Stock Meets Solana, Bringing Real-World Assets Onchain <br>
+        <div style="font-family: monospace; margin-bottom: 15px;">
+            SPCX: SpaceX Stock Meets Solana, Bringing Real-World Assets Onchain<br>
             <a href="https://www.powerful.ng/2026/09/spcx-spacex-stock-meets-solana-bringing.html">powerful.ng/spcx-spacex</a>
-        </div>
-        <p>
-            <a href="https://x.com/powerful_ng">@powerful_ng</a>, 
-            <a href="https://x.com/dotdominic_ng">@dotdominic_ng</a> on X
-        </p>
-    </section>
-
-    <!-- Background Section -->
-    <section>
-        <div class="section-title">Background</div>
-        <div class="grid-row">
-            <div class="grid-left"><strong>1</strong> exit</div>
-            <div class="grid-right"><strong>BA</strong> Uniport</div>
-        </div>
-        <div class="list-item">
-            BA Religious and Cultural studies, Uniport<br>
-            <span class="meta-info">BA Thesis: The Role of Media in Shaping Intercultural Communication in the University of Port Harcourt</span>
         </div>
     </section>
 
     <!-- Exits Section -->
     <section>
-        <div class="section-title">Exits</div>
+        <div class="section-title-simple">Exits</div>
         <div class="grid-row">
-            <div class="grid-left">Powerful Media</div>
-            <div class="grid-right">Campus Media hub</div>
+            <span>Powerful Media</span>
+            <span style="color: #555;">Campus Media hub</span>
         </div>
     </section>
 
-    <!-- Recently Read Section -->
+    <!-- Recently Read -->
     <section>
-        <div class="section-title">Recently Read</div>
-        <div class="grid-row"><div class="grid-left">The Lords of Easy Money</div><div class="grid-right">Christopher Leonard</div></div>
-        <div class="grid-row"><div class="grid-left">TAO of Trading</div><div class="grid-right">Simon Ree</div></div>
-        <div class="grid-row"><div class="grid-left">How to Win Friends and Influence People</div><div class="grid-right">Dale Carnegie</div></div>
-        <div class="grid-row"><div class="grid-left">Cryptocurrency trading: a comprehensive survey</div><div class="grid-right">Carmine Ventre, et al</div></div>
-        <div class="grid-row"><div class="grid-left">Crypto Asset Investing in the Age of Autonomy</div><div class="grid-right">Jake Ryan et al</div></div>
-        <div class="grid-row"><div class="grid-left">Zero to Hero in Cryptocurrency Trading</div><div class="grid-right">Bogdan Vaida</div></div>
-        <div class="grid-row"><div class="grid-left">Man's Search for Meaning</div><div class="grid-right">Viktor E. Frankl</div></div>
-        <div class="grid-row"><div class="grid-left">Thinking Fast and Slow</div><div class="grid-right">Daniel Kahneman</div></div>
-        <div class="grid-row"><div class="grid-left">Zero to One</div><div class="grid-right">Peter Thiel</div></div>
-        <div class="grid-row"><div class="grid-left">Robinson Crusoe</div><div class="grid-right">Daniel Defoe</div></div>
-        <div class="grid-row"><div class="grid-left">DeFi and the Future of Finance</div><div class="grid-right">Campbell R. Harvey</div></div>
-        <div class="grid-row"><div class="grid-left">Sarraounia, Love, and the Postcolony</div><div class="grid-right">Antoinette Tidjani Alou</div></div>
-        <div class="grid-row"><div class="grid-left">Cryptocurrency All-in-One For Dummies</div><div class="grid-right">Kiana Danial et al</div></div>
+        <div class="section-title-simple">Recently Read</div>
+        <div class="grid-row"><span>The Lords of Easy Money</span><span style="color: #555;">Christopher Leonard</span></div>
+        <div class="grid-row"><span>TAO of Trading</span><span style="color: #555;">Simon Ree</span></div>
+        <div class="grid-row"><span>How to Win Friends and Influence People</span><span style="color: #555;">Dale Carnegie</span></div>
+        <div class="grid-row"><span>Cryptocurrency trading: a comprehensive survey</span><span style="color: #555;">Carmine Ventre, et al</span></div>
+        <div class="grid-row"><span>Zero to Hero in Cryptocurrency Trading</span><span style="color: #555;">Bogdan Vaida</span></div>
+        <div class="grid-row"><span>Man's Search for Meaning</span><span style="color: #555;">Viktor E. Frankl</span></div>
+        <div class="grid-row"><span>Thinking Fast and Slow</span><span style="color: #555;">Daniel Kahneman</span></div>
+        <div class="grid-row"><span>Zero to One</span><span style="color: #555;">Peter Thiel</span></div>
     </section>
 
-    <!-- Interests Section -->
+    <!-- Interests -->
     <section>
-        <div class="section-title">Interests</div>
-        <div class="interests-list">
-            Crypto Trading. Research. Writing. Traps (music). Cape Verde. China. Ukraine.
+        <div class="section-title-simple">Interests</div>
+        <p style="font-family: monospace;">Crypto Trading. Research. Writing.music. Cape Verde. China. Ukraine.</p>
+    </section>
+
+    <!-- Location & Links -->
+    <section>
+        <div class="section-title-simple">Links</div>
+        <div style="font-family: monospace;">
+            Port Harcourt, Nigeria <br>
+            Mentor: <a href="https://timsmek.com/publishing-plans-view">Timsmek</a><br>
+            X: <a href="https://x.com/powerful_ng">@powerful_ng</a>, <a href="https://x.com/dotdominic_ng">@dotdominic_ng</a>
         </div>
     </section>
 
-    <!-- Footer Links & Info -->
-    <section>
-        <div class="section-title">Location & Network</div>
-        <p>Port Harcourt, Nigeria</p>
-        <p>Father: Joseph Udo</p>
-        <p>Mentor: <a href="https://timsmek.com/publishing-plans-view">Timsmek</a></p>
-    </section>
-
-    <!-- Quote -->
     <div class="quote">
         "He who has a why to live for can bear almost anyhow" — Viktor E. Frankl
     </div>
